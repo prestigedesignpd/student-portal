@@ -32,19 +32,17 @@ export async function GET(request: Request) {
             .lean()
 
         if (!grouped) {
-            // Return flat list with helper fields for the frontend
             const flatResult = enrollments.map((e: any) => ({
                 ...e,
                 studentId: {
                     ...e.studentId,
                     fullName: `${e.studentId?.userId?.firstName} ${e.studentId?.userId?.lastName}`,
-                    studentId: e.studentId?.matricNumber // Map matricNumber to studentId for frontend
+                    studentId: e.studentId?.matricNumber
                 }
             }))
             return NextResponse.json(flatResult)
         }
 
-        // Group by student
         const studentGroups: Record<string, any> = {}
         enrollments.forEach((enrollment: any) => {
             const studentId = enrollment.studentId?._id?.toString()
@@ -89,13 +87,11 @@ export async function POST(request: Request) {
         }
 
         if (action === 'APPROVED') {
-            // Strict Validation for Approvals
             const candidateEnrollments = await Enrollment.find({ _id: { $in: enrollmentIds } })
                 .populate({ path: 'courseId', model: Course })
                 .populate({ path: 'studentId', model: Student, populate: { path: 'userId', model: User } })
                 .lean()
 
-            // Group by student for validation
             const studentGroups: Record<string, any> = {}
             candidateEnrollments.forEach((enroll: any) => {
                 const sid = enroll.studentId?._id?.toString()
@@ -115,49 +111,47 @@ export async function POST(request: Request) {
                 const group = studentGroups[sid]
                 const studentName = `${group.student.userId.firstName} ${group.student.userId.lastName}`
                 const { department, level } = group.student
-                const semester = group.candidates[0].semester
 
-                // 2. Dynamic Credit Limit Calculation (Based on Program Structure)
-                const programCourses = await Course.find({ department, level, semester }).lean()
-                const programTotalUnits = programCourses.reduce((sum, c) => sum + (c.creditUnits || 0), 0)
+                const semestersInBatch = [...new Set(group.candidates.map((c: any) => c.semester))]
 
-                // Set limit based on program total + 2 units buffer (to accommodate electives)
-                // Fallback to 24 if curriculum is not yet defined in the system
-                const dynamicMaxCredits = programTotalUnits > 0 ? programTotalUnits + 2 : 24
+                for (const semester of semestersInBatch) {
+                    const programCourses = await Course.find({ department, level, semester }).lean()
+                    const programTotalUnits = programCourses.reduce((sum, c) => sum + (c.creditUnits || 0), 0)
+                    const dynamicMaxCredits = programTotalUnits > 0 ? programTotalUnits + 2 : 24
 
-                // Unique candidate course IDs in this request
-                const candidateCourseIds = [...new Set(group.candidates.map((c: any) => c.courseId?._id?.toString()))]
+                    const semesterCandidates = group.candidates.filter((c: any) => c.semester === semester)
+                    const candidateCreditsForSemester = semesterCandidates.reduce((sum: number, c: any) => sum + (c.courseId?.creditUnits || 0), 0)
+                    const candidateCourseIds = [...new Set(semesterCandidates.map((c: any) => c.courseId?._id?.toString()))]
 
-                // 3. Check for duplicates (Are any of these courses already approved for this student in the DB?)
-                const existingApproved = await Enrollment.find({
-                    studentId: sid,
-                    status: 'APPROVED',
-                    academicYear: group.candidates[0].academicYear,
-                    semester: group.candidates[0].semester,
-                    courseId: { $in: candidateCourseIds }
-                }).populate({ path: 'courseId', model: Course }).lean()
+                    const existingApproved = await Enrollment.find({
+                        studentId: sid,
+                        status: 'APPROVED',
+                        academicYear: group.candidates[0].academicYear,
+                        semester: semester,
+                        courseId: { $in: candidateCourseIds }
+                    }).populate({ path: 'courseId', model: Course }).lean()
 
-                if (existingApproved.length > 0) {
-                    const duplicateCodes = existingApproved.map(e => e.courseId?.courseCode).join(', ')
-                    return NextResponse.json({
-                        error: `Validation Failed: ${studentName} already has an approved record for: ${duplicateCodes}.`
-                    }, { status: 400 })
-                }
+                    if (existingApproved.length > 0) {
+                        const duplicateCodes = existingApproved.map(e => e.courseId?.courseCode).join(', ')
+                        return NextResponse.json({
+                            error: `Validation Failed: ${studentName} already has an approved record for ${semester} Semester: ${duplicateCodes}.`
+                        }, { status: 400 })
+                    }
 
-                // 4. Check Credit Limit against Dynamic Max
-                const currentApproved = await Enrollment.find({
-                    studentId: sid,
-                    status: 'APPROVED',
-                    academicYear: group.candidates[0].academicYear,
-                    semester: group.candidates[0].semester
-                }).populate({ path: 'courseId', model: Course }).lean()
+                    const currentApproved = await Enrollment.find({
+                        studentId: sid,
+                        status: 'APPROVED',
+                        academicYear: group.candidates[0].academicYear,
+                        semester: semester
+                    }).populate({ path: 'courseId', model: Course }).lean()
 
-                const currentApprovedCredits = currentApproved.reduce((sum, e) => sum + (e.courseId?.creditUnits || 0), 0)
+                    const currentApprovedCredits = currentApproved.reduce((sum, e) => sum + (e.courseId?.creditUnits || 0), 0)
 
-                if (currentApprovedCredits + group.candidateCredits > dynamicMaxCredits) {
-                    return NextResponse.json({
-                        error: `Validation Failed: Approving these courses would put ${studentName} at ${currentApprovedCredits + group.candidateCredits} units. The curriculum limit for ${department} ${level}L (${semester} Semester) is ${programTotalUnits} units + 2 allowance (Total Max: ${dynamicMaxCredits}).`
-                    }, { status: 400 })
+                    if (currentApprovedCredits + candidateCreditsForSemester > dynamicMaxCredits) {
+                        return NextResponse.json({
+                            error: `Validation Failed: Approving these courses would put ${studentName} at ${currentApprovedCredits + candidateCreditsForSemester} units for ${semester} Semester. The current curriculum limit for ${department} ${level}L (${semester} Semester) is ${programTotalUnits} units + 2 allowance (Total Max: ${dynamicMaxCredits}).`
+                        }, { status: 400 })
+                    }
                 }
             }
         }
@@ -167,7 +161,6 @@ export async function POST(request: Request) {
             { status: action }
         )
 
-        // Trigger Notifications
         if (result.modifiedCount > 0) {
             const affectedEnrollments = await Enrollment.find({ _id: { $in: enrollmentIds } })
                 .populate({ path: 'studentId', model: Student })
