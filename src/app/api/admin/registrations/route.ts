@@ -111,16 +111,24 @@ export async function POST(request: Request) {
                 studentGroups[sid].candidateCredits += enroll.courseId?.creditUnits || 0
             })
 
-            const MAX_CREDITS = 24
-
             for (const sid in studentGroups) {
                 const group = studentGroups[sid]
                 const studentName = `${group.student.userId.firstName} ${group.student.userId.lastName}`
+                const { department, level } = group.student
+                const semester = group.candidates[0].semester
+
+                // 2. Dynamic Credit Limit Calculation (Based on Program Structure)
+                const programCourses = await Course.find({ department, level, semester }).lean()
+                const programTotalUnits = programCourses.reduce((sum, c) => sum + (c.creditUnits || 0), 0)
+
+                // Set limit based on program total + 2 units buffer (to accommodate electives)
+                // Fallback to 24 if curriculum is not yet defined in the system
+                const dynamicMaxCredits = programTotalUnits > 0 ? programTotalUnits + 2 : 24
 
                 // Unique candidate course IDs in this request
                 const candidateCourseIds = [...new Set(group.candidates.map((c: any) => c.courseId?._id?.toString()))]
 
-                // 1. Check for duplicates (Are any of these courses already approved for this student in the DB?)
+                // 3. Check for duplicates (Are any of these courses already approved for this student in the DB?)
                 const existingApproved = await Enrollment.find({
                     studentId: sid,
                     status: 'APPROVED',
@@ -136,7 +144,7 @@ export async function POST(request: Request) {
                     }, { status: 400 })
                 }
 
-                // 2. Check Credit Limit
+                // 4. Check Credit Limit against Dynamic Max
                 const currentApproved = await Enrollment.find({
                     studentId: sid,
                     status: 'APPROVED',
@@ -146,9 +154,9 @@ export async function POST(request: Request) {
 
                 const currentApprovedCredits = currentApproved.reduce((sum, e) => sum + (e.courseId?.creditUnits || 0), 0)
 
-                if (currentApprovedCredits + group.candidateCredits > MAX_CREDITS) {
+                if (currentApprovedCredits + group.candidateCredits > dynamicMaxCredits) {
                     return NextResponse.json({
-                        error: `Validation Failed: Approving these courses would put ${studentName} at ${currentApprovedCredits + group.candidateCredits} units (Max ${MAX_CREDITS}).`
+                        error: `Validation Failed: Approving these courses would put ${studentName} at ${currentApprovedCredits + group.candidateCredits} units. The curriculum limit for ${department} ${level}L (${semester} Semester) is ${programTotalUnits} units + 2 allowance (Total Max: ${dynamicMaxCredits}).`
                     }, { status: 400 })
                 }
             }
