@@ -36,8 +36,7 @@ export async function POST(request: Request) {
         const existingEnrollments = await Enrollment.find({
             studentId: user.student._id,
             courseId: { $in: courseIds },
-            academicYear: '2023/2024', // Use current session
-            semester: 'FIRST',
+            academicYear: '2023/2024',
             status: { $in: ['PENDING', 'APPROVED'] }
         }).populate({ path: 'courseId', model: Course }).lean()
 
@@ -81,12 +80,12 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Credit limit exceeded (Max 24 Units)' }, { status: 400 })
         }
 
-        // Create enrollments with PENDING status
-        const enrollmentPromises = courseIds.map((courseId: string) =>
+        // Create enrollments with correct semester from course data
+        const enrollmentPromises = courses.map((course: any) =>
             Enrollment.create({
                 studentId: user.student._id,
-                courseId,
-                semester: 'FIRST',
+                courseId: course._id,
+                semester: course.semester, // Use actual course semester
                 academicYear: '2023/2024',
                 status: 'PENDING'
             })
