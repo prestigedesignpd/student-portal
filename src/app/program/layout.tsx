@@ -4,6 +4,7 @@ import React from 'react'
 import StudentSidebar from '@/components/layout/StudentSidebar'
 import Navbar from '@/components/layout/Navbar'
 import RightDrawer from '@/components/layout/RightDrawer'
+import MobileNav from '@/components/layout/MobileNav'
 import { FiBell, FiMessageSquare, FiInfo, FiCheckCircle, FiClock } from 'react-icons/fi'
 
 export default function StudentDashboardLayout({
@@ -122,6 +123,9 @@ export default function StudentDashboardLayout({
                     </button>
                 </div>
             </RightDrawer>
+
+            {/* Premium Mobile Navigation */}
+            <MobileNav />
         </div>
     )
 }

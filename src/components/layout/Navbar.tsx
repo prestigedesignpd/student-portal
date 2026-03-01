@@ -179,26 +179,6 @@ export default function Navbar({
                 </div>
             </nav>
 
-            <div className={`md:hidden fixed bottom-3 left-3 right-3 z-50 rounded-2xl border transition-all duration-500 ${isAdminRoute
-                ? 'bg-gray-950/90 backdrop-blur-2xl border-white/5 shadow-2xl shadow-black'
-                : 'bg-white/90 backdrop-blur-2xl border-gray-100 shadow-[0_10px_40px_rgba(0,0,0,0.03)]'
-                } px-4 py-3`}>
-                <div className="flex justify-between items-center max-w-md mx-auto">
-                    {navigation.map((item) => (
-                        <Link
-                            key={item.href}
-                            href={item.href}
-                            className={`flex flex-col items-center gap-1.5 transition-all ${isActive(item.href)
-                                ? (isAdminRoute ? 'text-white' : 'text-primary-600') + ' scale-110'
-                                : 'text-gray-500'
-                                }`}
-                        >
-                            <item.icon size={18} strokeWidth={isActive(item.href) ? 3 : 2} />
-                        </Link>
-                    ))}
-                </div>
-            </div>
-
             <div className="h-12 md:h-16"></div>
         </>
     )

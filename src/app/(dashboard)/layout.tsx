@@ -4,6 +4,7 @@ import React from 'react'
 import StudentSidebar from '@/components/layout/StudentSidebar'
 import Navbar from '@/components/layout/Navbar'
 import RightDrawer from '@/components/layout/RightDrawer'
+import MobileNav from '@/components/layout/MobileNav'
 import AIAssistantWidget from '@/components/common/AIAssistantWidget'
 import { FiBell, FiMessageSquare, FiInfo, FiCheckCircle, FiClock } from 'react-icons/fi'
 import { useAuth } from '@/contexts/AuthContext'
@@ -122,6 +123,9 @@ export default function StudentDashboardLayout({
 
             {/* AI Assistant Floating Widget */}
             <AIAssistantWidget />
+
+            {/* Premium Mobile Navigation */}
+            <MobileNav />
 
             {/* (Messages Drawer Removed - Redirects to Mail App) */}
         </div>

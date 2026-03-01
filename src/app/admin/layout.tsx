@@ -3,6 +3,7 @@
 import React from 'react'
 import AdminSidebar from '@/components/layout/AdminSidebar'
 import Navbar from '@/components/layout/Navbar'
+import MobileNav from '@/components/layout/MobileNav'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 
@@ -49,6 +50,9 @@ export default function AdminLayout({
                     </div>
                 </main>
             </div>
+
+            {/* Premium Mobile Navigation */}
+            <MobileNav />
         </div>
     )
 }
