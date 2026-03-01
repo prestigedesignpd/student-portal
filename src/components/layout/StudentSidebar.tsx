@@ -52,13 +52,13 @@ export default function StudentSidebar({ isMobileMenuOpen, onClose, isCollapsed,
             {/* Mobile Backdrop */}
             {isMobileMenuOpen && (
                 <div
-                    className="fixed inset-0 bg-gray-950/60 backdrop-blur-sm z-[55] md:hidden transition-all duration-500"
+                    className="fixed inset-0 bg-gray-950/60 backdrop-blur-sm z-[55] md:hidden transition-all duration-200"
                     onClick={onClose}
                 ></div>
             )}
 
             <aside
-                className={`flex flex-col fixed top-0 h-screen z-[60] bg-gray-950 border-r border-gray-800/50 transition-all duration-500 ease-in-out 
+                className={`flex flex-col fixed top-0 h-screen z-[60] bg-gray-950 border-r border-gray-800/50 transition-all duration-200 ease-in-out 
                     ${isMobileMenuOpen ? 'left-0' : '-left-full'} 
                     md:left-0 
                     ${isCollapsed ? 'w-20' : 'w-72'} 
@@ -88,7 +88,7 @@ export default function StudentSidebar({ isMobileMenuOpen, onClose, isCollapsed,
                             <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-emerald-500 rounded-md border-2 border-gray-950 z-20 shadow-md"></div>
                         </div>
                         {!isCollapsed && (
-                            <div className="flex flex-col animate-in fade-in slide-in-from-left-3 duration-500">
+                            <div className="flex flex-col animate-in fade-in slide-in-from-left-3 duration-200">
                                 <h4 className="text-[10px] font-black text-white uppercase tracking-widest truncate max-w-[140px]">
                                     {user?.firstName || 'Student'} {user?.lastName || ''}
                                 </h4>
@@ -126,7 +126,7 @@ export default function StudentSidebar({ isMobileMenuOpen, onClose, isCollapsed,
                             <item.icon size={17} className={`flex-shrink-0 transition-all duration-300 ${isActive(item.href) ? 'text-primary-400 drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]' : 'group-hover:scale-110 group-hover:text-gray-200'}`} />
 
                             {!isCollapsed && (
-                                <div className="flex flex-grow items-center justify-between animate-in fade-in slide-in-from-left-4 duration-500">
+                                <div className="flex flex-grow items-center justify-between animate-in fade-in slide-in-from-left-4 duration-200">
                                     <div className="flex flex-col">
                                         <span className={`text-[10px] font-black uppercase tracking-widest leading-none ${isActive(item.href) ? 'text-primary-50' : 'text-gray-200'}`}>{item.name}</span>
                                         <p className="text-[7px] font-bold text-gray-500 uppercase tracking-widest mt-1 group-hover:text-gray-400 transition-colors">{item.detail}</p>

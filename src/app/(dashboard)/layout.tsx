@@ -84,7 +84,7 @@ export default function StudentDashboardLayout({
                 />
 
                 {/* Content Area */}
-                <main className={`flex-grow transition-all duration-500 ease-in-out ${isSidebarCollapsed ? 'md:pl-20' : 'md:pl-72'}`}>
+                <main className={`flex-grow transition-all duration-200 ease-in-out ${isSidebarCollapsed ? 'md:pl-20' : 'md:pl-72'}`}>
                     <div className="min-h-[calc(100vh-64px)] relative z-10">
                         {children}
                     </div>
